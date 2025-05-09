@@ -1,0 +1,7 @@
+{
+  "issue": "Inefficient nested loops for finding common elements",
+  "old_code": "for item1 in list1:\n    for item2 in list2:\n        if item1 == item2 and item1 not in common:\n            common.append(item1)",
+  "new_code": "common = list(set(list1) & set(list2))",
+  "benefit": "Using sets and set operations is much more efficient than nested loops, especially for large lists. This change reduces the time complexity from O(n^2) to O(n), resulting in a significant performance boost.",
+  "commit_message": "Optimize find_common_elements using set intersection"
+}

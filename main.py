@@ -1,23 +1,21 @@
-import os
-from dotenv import load_dotenv
+import sys
 from ai.analyzer import analyze_file
 
-# Load environment variables
-load_dotenv()
-
 def main():
-    print("🔍 Analyzing sample.py...")
-    result = analyze_file("sample.py")
-
+    if len(sys.argv) != 2:
+        print("Usage: python main.py <python_file>")
+        sys.exit(1)
+        
+    file_path = sys.argv[1]
+    print("🚀 CodeBrew - AI Code Optimizer")
+    print("==============================\n")
+    print(f"Analyzing file: {file_path}")
+    
+    result = analyze_file(file_path)
     if result:
-        print("\n✅ Suggestion received:")
-        print("Issue:", result.get("issue"))
-        print("\nOld Code:\n", result.get("old_code"))
-        print("\nNew Code:\n", result.get("new_code"))
-        print("\nBenefit:", result.get("benefit"))
-        print("\nCommit Message:", result.get("commit_message"))
-    else:
-        print("\n❌ No suggestion returned.")
+        print(result)
+    
+    print("\n✅ Analysis complete!")
 
 if __name__ == "__main__":
     main() 

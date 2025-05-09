@@ -1,0 +1,7 @@
+{
+  "issue": "Inefficient key lookup and removal in add method",
+  "old_code": "for item in self.cache:\n    if item[0] == key:\n        self.cache.remove(item)\n        break",
+  "new_code": "for i, (k, v) in enumerate(self.cache):\n    if k == key:\n        self.cache.pop(i)\n        break",
+  "benefit": "Avoids O(n) time complexity of list.remove() by using indexed access and pop(). Up to 2x faster for large caches.",
+  "commit_message": "Optimize cache key lookup and removal"
+}

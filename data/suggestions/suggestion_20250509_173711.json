@@ -1,0 +1,7 @@
+{
+  "issue": "The except block is too broad and catches all exceptions",
+  "old_code": "except:\n        return None",
+  "new_code": "except ZeroDivisionError:\n        return None",
+  "benefit": "Catches only the relevant ZeroDivisionError exception, allowing other exceptions to propagate and be handled elsewhere. This improves code clarity and maintainability.",
+  "commit_message": "Handle only ZeroDivisionError in divide_numbers"
+}
