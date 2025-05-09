@@ -50,36 +50,47 @@ def analyze_code_with_bedrock(code: str) -> Dict[str, Any]:
     prompt = build_prompt(code)
 
     try:
+        print("🔧 Sending request to Bedrock...")
+        request_body = {
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": 1024,
+            "top_k": 250,
+            "stop_sequences": [],
+            "temperature": 0.5,
+            "top_p": 0.999,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt
+                        }
+                    ]
+                }
+            ]
+        }
+        
+        print("📤 Request body:", json.dumps(request_body, indent=2))
+        
         response = client.invoke_model(
             modelId=model_id,
             contentType="application/json",
             accept="application/json",
-            body=json.dumps({
-                "anthropic_version": "bedrock-2023-05-31",
-                "max_tokens": 1024,
-                "top_k": 250,
-                "stop_sequences": [],
-                "temperature": 0.5,
-                "top_p": 0.999,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": prompt
-                            }
-                        ]
-                    }
-                ]
-            })
+            body=json.dumps(request_body)
         )
 
+        print("📥 Received response from Bedrock")
         response_body = json.loads(response["body"].read())
+        print("📦 Response body:", json.dumps(response_body, indent=2))
+        
         model_output = response_body.get("content", [{}])[0].get("text", "")
+        print("📝 Model output:", model_output)
 
         try:
-            return json.loads(model_output)
+            result = json.loads(model_output)
+            print("✅ Successfully parsed JSON response")
+            return result
         except json.JSONDecodeError as e:
             print("⚠️ Error parsing model output:", e)
             print("Raw output:", model_output)
@@ -87,6 +98,8 @@ def analyze_code_with_bedrock(code: str) -> Dict[str, Any]:
             
     except Exception as e:
         print(f"⚠️ Error analyzing code: {str(e)}")
+        if hasattr(e, 'response'):
+            print("Error response:", e.response)
         return {}
 
 def analyze_file(file_path: str) -> Dict[str, Any]:
@@ -100,8 +113,10 @@ def analyze_file(file_path: str) -> Dict[str, Any]:
         Dict[str, Any]: Analysis results with issue, code changes, benefit, and commit message
     """
     try:
+        print(f"📂 Reading file: {file_path}")
         with open(file_path, "r") as f:
             code = f.read()
+        print(f"📄 File contents:\n{code}")
         return analyze_code_with_bedrock(code)
     except Exception as e:
         print(f"⚠️ Error reading file {file_path}: {str(e)}")
