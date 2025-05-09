@@ -1,8 +1,8 @@
 class SimpleCache:
     def __init__(self):
-        self.cache = []
+    def __init__(self):
+        self.cache = OrderedDict()
         self.max_size = 100
-        
     def add(self, key, value):
         # Check if key exists
         for item in self.cache:
