@@ -1,9 +1,11 @@
 def get_duplicates(arr):
     duplicates = []
-    for i in range(len(arr)):
-        for j in range(i + 1, len(arr)):
-            if arr[i] == arr[j]:
-                duplicates.append(arr[i])
+    seen = set()
+    for num in arr:
+        if num in seen:
+            duplicates.append(num)
+        else:
+            seen.add(num)
     return duplicates
 
 # Example usage
