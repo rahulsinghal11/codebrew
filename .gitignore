@@ -38,4 +38,7 @@ ENV/
 
 # OS specific files
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+# Generated files
+data/suggestions/suggestion_*.json 
