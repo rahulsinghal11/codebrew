@@ -7,7 +7,7 @@ def process_data(data_list):
     for item in data_list:
         if item > threshold and item not in result:
             result.append(item)
-            
+    result = sorted(set())
     # Sort results using built-in sorted function
     return sorted(result)
 
