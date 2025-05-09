@@ -1,46 +1,49 @@
-import sys
 import os
-from pathlib import Path
-from ai.analyzer import analyze_file
-
-def analyze_directory(directory_path: str):
-    """Analyze all Python files in a directory"""
-    directory = Path(directory_path)
-    if not directory.exists():
-        print(f"Error: Directory '{directory_path}' does not exist")
-        return
-        
-    python_files = list(directory.glob("**/*.py"))
-    if not python_files:
-        print(f"No Python files found in '{directory_path}'")
-        return
-        
-    print(f"\nFound {len(python_files)} Python files to analyze")
-    for file_path in python_files:
-        print(f"\n📄 Analyzing: {file_path}")
-        result = analyze_file(str(file_path))
-        if result:
-            print(result)
+from dotenv import load_dotenv
+from utils.repo_selector import RepoSelector
+from ai.analyzer import analyze_repository_structure, analyze_github_files
 
 def main():
-    if len(sys.argv) != 2:
-        print("Usage: python main.py <python_file_or_directory>")
-        sys.exit(1)
+    # Load environment variables
+    load_dotenv()
+    
+    # Get number of files to analyze from environment
+    n_files = int(os.getenv("N_FILES", "5"))
+    
+    # Initialize repository selector
+    selector = RepoSelector()
+    
+    # Get repository info and structure
+    repo_info = selector.analyze_repository(n_files)
+    if not repo_info:
+        print("Failed to get repository information")
+        return
         
-    path = sys.argv[1]
-    print("🚀 CodeBrew - AI Code Optimizer")
-    print("==============================\n")
+    # Get Bedrock's analysis of which files to analyze
+    selected_files = analyze_repository_structure(repo_info)
+    if not selected_files:
+        print("Failed to analyze repository structure")
+        return
+        
+    print(f"\n🔍 Selected {len(selected_files)} files for analysis:")
+    for file in selected_files:
+        print(f"\n📄 {file['name']}")
+        print(f"Reason: {file['reason']}")
     
-    if os.path.isdir(path):
-        print(f"Analyzing directory: {path}")
-        analyze_directory(path)
+    # Analyze all selected files at once
+    print("\n🔍 Analyzing files...")
+    analyses = analyze_github_files(selected_files)
+    
+    if analyses:
+        print(f"\n✅ Successfully analyzed {len(analyses)} files")
+        for analysis in analyses:
+            print(f"\n📝 Analysis for {analysis['file']}:")
+            print(f"Issue: {analysis['issue']}")
+            print(f"Benefit: {analysis['benefit']['explanation']}")
     else:
-        print(f"Analyzing file: {path}")
-        result = analyze_file(path)
-        if result:
-            print(result)
-    
-    print("\n✅ Analysis complete!")
+        print("\n❌ Analysis failed")
+            
+    print("\n✨ Analysis complete!")
 
 if __name__ == "__main__":
     main() 
