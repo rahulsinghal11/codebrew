@@ -1,0 +1,25 @@
+{
+  "tokens": {
+    "github": {
+      "type": "personal_access_token",
+      "scopes": ["repo", "workflow"],
+      "description": "GitHub API access token"
+    },
+    "email": {
+      "type": "smtp_credentials",
+      "server": "smtp.gmail.com",
+      "port": 587,
+      "description": "Email service credentials"
+    }
+  },
+  "environments": {
+    "development": {
+      "debug": true,
+      "log_level": "DEBUG"
+    },
+    "production": {
+      "debug": false,
+      "log_level": "INFO"
+    }
+  }
+} 

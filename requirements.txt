@@ -1,4 +1,12 @@
 python-dotenv==1.0.0
 requests==2.31.0
 pandas==2.1.4
-numpy==1.26.2 
+numpy==1.26.2
+flask==3.0.0
+dash==2.14.2
+plotly==5.18.0
+PyGithub==2.1.1
+smtplib3==0.0.1
+pathlib==1.0.1
+dash-core-components==2.0.0
+dash-html-components==2.0.0 
