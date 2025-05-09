@@ -1,0 +1,12 @@
+{
+  "issue": "Inefficient memory usage when creating a new matrix",
+  "repo_name": "codebrew",
+  "file_path": "test_files/6_memory_usage.py",
+  "file_name": "6_memory_usage.py",
+  "start_line": 7,
+  "end_line": 11,
+  "old_code": "result = []\nfor i in range(cols):\n    row = []\n    for j in range(rows):\n        row.append(matrix[j][i])",
+  "new_code": "result = [[matrix[j][i] for j in range(rows)] for i in range(cols)]",
+  "benefit": "Reduces memory usage by avoiding the creation of unnecessary intermediate lists. The new code is more concise and Pythonic.",
+  "commit_message": "Optimize memory usage in matrix transpose"
+}

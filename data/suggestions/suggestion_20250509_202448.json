@@ -1,0 +1,12 @@
+{
+  "issue": "Global variables used throughout the code",
+  "repo_name": "codebrew",
+  "file_path": "test_files/10_code_organization.py",
+  "file_name": "10_code_organization.py",
+  "start_line": 2,
+  "end_line": 4,
+  "old_code": "config = {}\ndata = []\nresults = []",
+  "new_code": "class DataProcessor:\n    def __init__(self):\n        self.config = {'max_items': 100, 'timeout': 30}\n        self.data = []\n        self.results = []",
+  "benefit": "Encapsulating global variables into a class improves code organization, readability, and maintainability by avoiding naming conflicts and making the code more modular and reusable.",
+  "commit_message": "Refactor global variables into a class"
+}

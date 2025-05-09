@@ -1,0 +1,12 @@
+{
+  "issue": "Lack of proper resource cleanup for temporary files",
+  "repo_name": "codebrew",
+  "file_path": "test_files/9_resource_management.py",
+  "file_name": "9_resource_management.py",
+  "start_line": 41,
+  "end_line": 46,
+  "old_code": "for file_name in test_files:\n    try:\n        import os\n        os.remove(file_name)\n    except Exception as e:\n        print(f\"Error removing {file_name}: {str(e)}\")",
+  "new_code": "for file_name in test_files:\n    try:\n        os.remove(file_name)\n    except OSError as e:\n        print(f\"Error removing {file_name}: {e.strerror}\")",
+  "benefit": "Handles file removal errors more gracefully by catching the specific OSError exception and using the built-in strerror attribute for better error messages.",
+  "commit_message": "Improve error handling for temporary file cleanup"
+}

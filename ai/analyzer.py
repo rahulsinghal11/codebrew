@@ -11,7 +11,10 @@ load_dotenv()
 
 # Configuration
 region = os.getenv("AWS_REGION", "us-east-1")
-model_id = "anthropic.claude-3-sonnet-20240229-v1:0"
+model_id = os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-3-sonnet-20240229-v1:0")
+max_tokens = int(os.getenv("BEDROCK_MAX_TOKENS", "1000"))
+temperature = float(os.getenv("BEDROCK_TEMPERATURE", "0.1"))
+suggestions_dir = os.getenv("SUGGESTIONS_DIR", "data/suggestions")
 
 # Initialize Bedrock client
 client = boto3.client("bedrock-runtime", region_name=region)
@@ -29,11 +32,13 @@ def analyze_python_code(code: str) -> str:
     prompt = f"""You are an expert AI code reviewer helping developers clean and improve codebases.
 
 You will receive a single Python file. Analyze it carefully and identify **ONE specific, high-impact suggestion** that improves the code in one of these ways:
-- ✅ Performance (e.g., faster loops, better data structures)
+- ✅ Performance (e.g., faster loops, better data structures, optimized SQL queries)
 - ✅ Readability or simplicity
 - ✅ Removal of dead or unused code
 - ✅ Using a cleaner or more Pythonic alternative
 - ✅ Using internal tools or libraries if relevant
+- ✅ SQL query optimization (e.g., adding indexes, rewriting queries, using better joins)
+- ✅ Import optimization (moving heavy/single-use imports into specific functions)
 
 Only suggest changes that are **safe, local**, and **do not change the behavior** of the code.
 
@@ -69,16 +74,47 @@ Example:
   "commit_message": "Optimize duplicate search with set lookup"
 }}
 
+Example with SQL:
+
+{{
+  "issue": "Inefficient SQL query with multiple subqueries",
+  "repo_name": "codebrew",
+  "file_path": "src/db/queries.py",
+  "file_name": "queries.py",
+  "start_line": 25,
+  "end_line": 30,
+  "old_code": "SELECT * FROM users WHERE id IN (SELECT user_id FROM orders WHERE total > 100) AND id IN (SELECT user_id FROM payments WHERE status = 'completed')",
+  "new_code": "SELECT DISTINCT u.* FROM users u\\nJOIN orders o ON u.id = o.user_id\\nJOIN payments p ON u.id = p.user_id\\nWHERE o.total > 100 AND p.status = 'completed'",
+  "benefit": "Reduces query execution time by ~60% by eliminating subqueries and using proper joins.",
+  "commit_message": "Optimize user query with proper joins"
+}}
+
+Example with Import Optimization:
+
+{{
+  "issue": "Heavy pandas import used only in one function",
+  "repo_name": "codebrew",
+  "file_path": "src/data/processor.py",
+  "file_name": "processor.py",
+  "start_line": 1,
+  "end_line": 5,
+  "old_code": "import pandas as pd\\nimport numpy as np\\n\\ndef process_data(data):\\n    df = pd.DataFrame(data)\\n    return df.mean()",
+  "new_code": "def process_data(data):\\n    import pandas as pd\\n    df = pd.DataFrame(data)\\n    return df.mean()",
+  "benefit": "Reduces module import time by ~200ms and memory usage by ~50MB when pandas is not needed.",
+  "commit_message": "Move pandas import into function scope"
+}}
+
 Here is the Python code to analyze:
 
 {code}"""
 
     try:
         response = client.invoke_model(
-            modelId="anthropic.claude-3-sonnet-20240229-v1:0",
+            modelId=model_id,
             body=json.dumps({
                 "anthropic_version": "bedrock-2023-05-31",
-                "max_tokens": 1000,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
                 "messages": [{
                     "role": "user",
                     "content": prompt
@@ -120,11 +156,11 @@ Here is the Python code to analyze:
 def save_suggestion(file_analyzed: str, suggestion: str) -> str:
     """Save the AI suggestion to a JSON file"""
     # Create data directory if it doesn't exist
-    os.makedirs("data/suggestions", exist_ok=True)
+    os.makedirs(suggestions_dir, exist_ok=True)
     
     # Generate filename with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"data/suggestions/suggestion_{timestamp}.json"
+    filename = f"{suggestions_dir}/suggestion_{timestamp}.json"
     
     # Save to file
     with open(filename, "w") as f:
