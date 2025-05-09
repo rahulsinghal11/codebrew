@@ -1,0 +1,62 @@
+[{
+    "file_path": "src/main/utils/test.py",
+    "date": "2024-01-01",
+    "repo_name": "CodeBrew",
+    "optimization_summary": [
+        "For loop replaced with list comprehension",
+        "Added better error handling",
+        "Removed unused imports"
+    ], 
+    "no_of_lines_optmized": 10,
+    "no_of_unused_lines_removed": 5,
+    "user": "Pratham"
+},
+{
+    "file_path": "src/core/model.py",
+    "date": "2024-01-03",
+    "repo_name": "CodeBrew",
+    "optimization_summary": [
+        "Optimized matrix multiplication",
+        "Refactored class structure"
+    ],
+    "no_of_lines_optmized": 25,
+    "no_of_unused_lines_removed": 3,
+    "user": "Aisha"
+},
+{
+    "file_path": "src/scripts/clean_data.py",
+    "date": "2024-01-05",
+    "repo_name": "DataCleanse",
+    "optimization_summary": [
+        "Vectorized pandas operations",
+        "Removed duplicate rows efficiently"
+    ],
+    "no_of_lines_optmized": 15,
+    "no_of_unused_lines_removed": 7,
+    "user": "Ravi"
+},
+{
+    "file_path": "src/api/routes.py",
+    "date": "2024-01-07",
+    "repo_name": "WebAPI",
+    "optimization_summary": [
+        "Improved endpoint response time",
+        "Removed deprecated endpoints"
+    ],
+    "no_of_lines_optmized": 18,
+    "no_of_unused_lines_removed": 4,
+    "user": "Sara"
+},
+{
+    "file_path": "src/main/utils/helpers.py",
+    "date": "2024-01-09",
+    "repo_name": "CodeBrew",
+    "optimization_summary": [
+        "Simplified helper functions",
+        "Added type hints",
+        "Improved docstrings"
+    ],
+    "no_of_lines_optmized": 12,
+    "no_of_unused_lines_removed": 2,
+    "user": "Pratham"
+}]
