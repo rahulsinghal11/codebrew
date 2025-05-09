@@ -1,32 +1,28 @@
 import boto3
 import json
-from pathlib import Path
 import os
 from dotenv import load_dotenv
+from pathlib import Path
+from typing import Dict, Any, Optional
 
-def get_bedrock_client():
-    """Get a configured Bedrock client"""
-    load_dotenv()
-    return boto3.client(
-        "bedrock-runtime",
-        region_name=os.getenv('AWS_REGION', 'us-east-1'),
-        aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
-        aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
-    )
+# Load environment variables
+load_dotenv()
 
-def load_file(file_path):
-    """Load and return the contents of a Python file"""
-    with open(file_path, "r") as f:
-        return f.read()
+# Configuration
+region = os.getenv("AWS_REGION", "us-east-1")
+model_id = os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-3-7-sonnet-20250219-v1:0")
 
-def build_prompt(code):
+# Initialize Bedrock client
+client = boto3.client("bedrock-runtime", region_name=region)
+
+def build_prompt(code: str) -> str:
     """Build the prompt for Claude with the code to analyze"""
     return f"""
-You are a senior AI code reviewer.
+You are an AI code reviewer.
 
-Analyze the following Python code and identify the single most meaningful change that would improve performance, readability, or maintainability.
+Review the following Python code and suggest one important improvement.
+Respond in this JSON format:
 
-Return your answer as JSON in the following format:
 {{
   "issue": "What needs to be improved",
   "old_code": "the original code block",
@@ -36,12 +32,51 @@ Return your answer as JSON in the following format:
 }}
 
 Code:
-
+```python
 {code}
-
+```
 """
 
-def analyze_python_file(file_path):
+def analyze_code_with_bedrock(code: str) -> Dict[str, Any]:
+    """
+    Analyze code using Claude 3.7 Sonnet
+    
+    Args:
+        code (str): The code to analyze
+        
+    Returns:
+        Dict[str, Any]: Analysis results with issue, code changes, benefit, and commit message
+    """
+    prompt = build_prompt(code)
+
+    try:
+        response = client.invoke_model(
+            modelId=model_id,
+            contentType="application/json",
+            accept="application/json",
+            body=json.dumps({
+                "prompt": prompt,
+                "max_tokens": 1024,
+                "temperature": 0.5,
+                "stop_sequences": ["\n\nHuman:"]
+            })
+        )
+
+        response_body = json.loads(response["body"].read())
+        model_output = response_body.get("completion")
+
+        try:
+            return json.loads(model_output)
+        except json.JSONDecodeError as e:
+            print("⚠️ Error parsing model output:", e)
+            print("Raw output:", model_output)
+            return {}
+            
+    except Exception as e:
+        print(f"⚠️ Error analyzing code: {str(e)}")
+        return {}
+
+def analyze_file(file_path: str) -> Dict[str, Any]:
     """
     Analyze a Python file and return improvement suggestions
     
@@ -49,38 +84,15 @@ def analyze_python_file(file_path):
         file_path (str): Path to the Python file to analyze
         
     Returns:
-        dict: Analysis results with issue, code changes, benefit, and commit message
+        Dict[str, Any]: Analysis results with issue, code changes, benefit, and commit message
     """
-    code = load_file(file_path)
-    prompt = build_prompt(code)
-    client = get_bedrock_client()
-
     try:
-        response = client.invoke_model(
-            modelId="anthropic.claude-3-sonnet-20240229-v1:0",
-            contentType="application/json",
-            accept="application/json",
-            body=json.dumps({
-                "prompt": prompt,
-                "max_tokens_to_sample": 1000,
-                "temperature": 0.5,
-                "stop_sequences": ["\n\nHuman:"]
-            })
-        )
-
-        response_body = json.loads(response['body'].read())
-        model_output = response_body['completion']
-
-        try:
-            suggestion = json.loads(model_output)
-            return suggestion
-        except json.JSONDecodeError:
-            print("Failed to parse model response. Here is raw output:\n", model_output)
-            return None
-            
+        with open(file_path, "r") as f:
+            code = f.read()
+        return analyze_code_with_bedrock(code)
     except Exception as e:
-        print(f"Error analyzing file: {str(e)}")
-        return None
+        print(f"⚠️ Error reading file {file_path}: {str(e)}")
+        return {}
 
 if __name__ == "__main__":
     # Example usage
@@ -100,7 +112,7 @@ if __name__ == "__main__":
         f.write(sample_code)
     
     try:
-        result = analyze_python_file(test_file)
+        result = analyze_file(test_file)
         print(json.dumps(result, indent=2))
     finally:
         # Clean up test file
