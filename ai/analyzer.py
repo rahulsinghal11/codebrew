@@ -44,6 +44,13 @@ Only suggest changes that are **safe, local**, and **do not change the behavior*
 
 🎯 **Your goal is to generate one actionable suggestion worth creating a pull request for.**
 
+IMPORTANT: When providing code snippets, you MUST:
+1. Preserve ALL original indentation and formatting
+2. Include the exact same number of spaces/tabs as the original code
+3. Keep the same line breaks and alignment
+4. Only change the specific lines that need improvement
+5. Keep all surrounding context intact
+
 Return your response **strictly in this JSON format** (and nothing else):
 
 {{
@@ -53,13 +60,14 @@ Return your response **strictly in this JSON format** (and nothing else):
   "file_name": "Name of the file being modified",
   "start_line": "Line number where the change starts (1-based)",
   "end_line": "Line number where the change ends (1-based)",
-  "old_code": "The original snippet (minimum necessary to understand the fix)",
-  "new_code": "The improved version (clean, correct, tested)",
+  "old_code": "The original snippet with exact indentation and formatting",
+  "new_code": "The improved version with identical indentation and formatting",
   "benefit": "A short explanation of why this change is useful. Include % improvement if it's a speed boost.",
-  "commit_message": "A short GitHub-style commit message (no more than 10 words)"
+  "commit_message": "A short GitHub-style commit message (no more than 10 words)",
+  "branch_name": "A descriptive branch name in kebab-case format (e.g., optimize-list-operations, fix-memory-leak)"
 }}
 
-Example:
+Example with preserved formatting:
 
 {{
   "issue": "Inefficient nested loops to find duplicates",
@@ -68,13 +76,14 @@ Example:
   "file_name": "duplicate_finder.py",
   "start_line": 10,
   "end_line": 15,
-  "old_code": "for i in range(len(arr)):\\n    for j in range(i+1, len(arr)):\\n        if arr[i] == arr[j]:",
-  "new_code": "seen = set()\\nfor item in arr:\\n    if item in seen:\\n        ...",
+  "old_code": "    for i in range(len(arr)):\\n        for j in range(i+1, len(arr)):\\n            if arr[i] == arr[j]:\\n                duplicates.append(arr[i])",
+  "new_code": "    seen = set()\\n    for item in arr:\\n        if item in seen:\\n            duplicates.append(item)\\n        seen.add(item)",
   "benefit": "Reduces time complexity from O(n^2) to O(n); ~80% faster on large inputs.",
-  "commit_message": "Optimize duplicate search with set lookup"
+  "commit_message": "Optimize duplicate search with set lookup",
+  "branch_name": "optimize-duplicate-search"
 }}
 
-Example with SQL:
+Example with SQL (preserving formatting):
 
 {{
   "issue": "Inefficient SQL query with multiple subqueries",
@@ -83,13 +92,14 @@ Example with SQL:
   "file_name": "queries.py",
   "start_line": 25,
   "end_line": 30,
-  "old_code": "SELECT * FROM users WHERE id IN (SELECT user_id FROM orders WHERE total > 100) AND id IN (SELECT user_id FROM payments WHERE status = 'completed')",
-  "new_code": "SELECT DISTINCT u.* FROM users u\\nJOIN orders o ON u.id = o.user_id\\nJOIN payments p ON u.id = p.user_id\\nWHERE o.total > 100 AND p.status = 'completed'",
+  "old_code": "    query = '''\\n        SELECT * FROM users\\n        WHERE id IN (\\n            SELECT user_id FROM orders\\n            WHERE total > 100\\n        )\\n        AND id IN (\\n            SELECT user_id FROM payments\\n            WHERE status = 'completed'\\n        )\\n    '''",
+  "new_code": "    query = '''\\n        SELECT DISTINCT u.*\\n        FROM users u\\n        JOIN orders o ON u.id = o.user_id\\n        JOIN payments p ON u.id = p.user_id\\n        WHERE o.total > 100\\n        AND p.status = 'completed'\\n    '''",
   "benefit": "Reduces query execution time by ~60% by eliminating subqueries and using proper joins.",
-  "commit_message": "Optimize user query with proper joins"
+  "commit_message": "Optimize user query with proper joins",
+  "branch_name": "optimize-user-query-joins"
 }}
 
-Example with Import Optimization:
+Example with Import Optimization (preserving formatting):
 
 {{
   "issue": "Heavy pandas import used only in one function",
@@ -101,7 +111,8 @@ Example with Import Optimization:
   "old_code": "import pandas as pd\\nimport numpy as np\\n\\ndef process_data(data):\\n    df = pd.DataFrame(data)\\n    return df.mean()",
   "new_code": "def process_data(data):\\n    import pandas as pd\\n    df = pd.DataFrame(data)\\n    return df.mean()",
   "benefit": "Reduces module import time by ~200ms and memory usage by ~50MB when pandas is not needed.",
-  "commit_message": "Move pandas import into function scope"
+  "commit_message": "Move pandas import into function scope",
+  "branch_name": "optimize-pandas-import"
 }}
 
 Here is the Python code to analyze:
@@ -142,6 +153,8 @@ Here is the Python code to analyze:
             print(json_suggestion["benefit"])
             print(f"\n💬 Commit Message:")
             print(json_suggestion["commit_message"])
+            print(f"\n🌿 Branch Name:")
+            print(json_suggestion["branch_name"])
             
             return cleaned_suggestion
         except json.JSONDecodeError as e:
