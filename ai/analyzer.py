@@ -1,45 +1,108 @@
+import boto3
 import json
 from pathlib import Path
+import os
+from dotenv import load_dotenv
 
-class CodeAnalyzer:
-    def __init__(self):
-        self.data_dir = Path(__file__).parent.parent / 'data'
+def get_bedrock_client():
+    """Get a configured Bedrock client"""
+    load_dotenv()
+    return boto3.client(
+        "bedrock-runtime",
+        region_name=os.getenv('AWS_REGION', 'us-east-1'),
+        aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+        aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
+    )
+
+def load_file(file_path):
+    """Load and return the contents of a Python file"""
+    with open(file_path, "r") as f:
+        return f.read()
+
+def build_prompt(code):
+    """Build the prompt for Claude with the code to analyze"""
+    return f"""
+You are a senior AI code reviewer.
+
+Analyze the following Python code and identify the single most meaningful change that would improve performance, readability, or maintainability.
+
+Return your answer as JSON in the following format:
+{{
+  "issue": "What needs to be improved",
+  "old_code": "the original code block",
+  "new_code": "the improved version",
+  "benefit": "e.g. 30% speedup, cleaner, or removes dead code",
+  "commit_message": "Short commit message for GitHub"
+}}
+
+Code:
+
+{code}
+
+"""
+
+def analyze_python_file(file_path):
+    """
+    Analyze a Python file and return improvement suggestions
     
-    def analyze_code(self, code_snippet: str) -> dict:
-        """
-        Analyze code snippet and provide suggestions
+    Args:
+        file_path (str): Path to the Python file to analyze
         
-        Args:
-            code_snippet (str): The code to analyze
-            
-        Returns:
-            dict: Analysis results with suggestions
-        """
-        # TODO: Implement actual code analysis logic
-        return {
-            "suggestions": self._load_sample_suggestions(),
-            "complexity": self._calculate_complexity(code_snippet),
-            "improvements": []
-        }
-    
-    def _load_sample_suggestions(self) -> list:
-        """Load sample suggestions from JSON file"""
+    Returns:
+        dict: Analysis results with issue, code changes, benefit, and commit message
+    """
+    code = load_file(file_path)
+    prompt = build_prompt(code)
+    client = get_bedrock_client()
+
+    try:
+        response = client.invoke_model(
+            modelId="anthropic.claude-3-sonnet-20240229-v1:0",
+            contentType="application/json",
+            accept="application/json",
+            body=json.dumps({
+                "prompt": prompt,
+                "max_tokens_to_sample": 1000,
+                "temperature": 0.5,
+                "stop_sequences": ["\n\nHuman:"]
+            })
+        )
+
+        response_body = json.loads(response['body'].read())
+        model_output = response_body['completion']
+
         try:
-            with open(self.data_dir / 'sample_suggestion.json', 'r') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            return []
-    
-    def _calculate_complexity(self, code: str) -> str:
-        """Calculate code complexity (placeholder)"""
-        # TODO: Implement actual complexity calculation
-        return "medium"
+            suggestion = json.loads(model_output)
+            return suggestion
+        except json.JSONDecodeError:
+            print("Failed to parse model response. Here is raw output:\n", model_output)
+            return None
+            
+    except Exception as e:
+        print(f"Error analyzing file: {str(e)}")
+        return None
 
 if __name__ == "__main__":
-    analyzer = CodeAnalyzer()
+    # Example usage
     sample_code = """
-    def example():
-        print("Hello, World!")
+    def get_duplicates(items):
+        duplicates = []
+        for i in range(len(items)):
+            for j in range(i + 1, len(items)):
+                if items[i] == items[j]:
+                    duplicates.append(items[i])
+        return duplicates
     """
-    result = analyzer.analyze_code(sample_code)
-    print(json.dumps(result, indent=2)) 
+    
+    # Create a temporary file for testing
+    test_file = "sample.py"
+    with open(test_file, "w") as f:
+        f.write(sample_code)
+    
+    try:
+        result = analyze_python_file(test_file)
+        print(json.dumps(result, indent=2))
+    finally:
+        # Clean up test file
+        if os.path.exists(test_file):
+            os.remove(test_file) 
