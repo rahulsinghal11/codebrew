@@ -471,17 +471,6 @@ def analyze_github_files(file_urls: List[Dict]) -> List[Dict]:
                     'Best practices'
                 ],
                 'priority_files': [f['name'] for f in files_to_analyze if f['type'] == 'core']
-            },
-            'output_format': {
-                'structure': {
-                    'file': "string (file path)",
-                    "issue": "string (description of the issue)",
-                    "benefit": {
-                        "explanation": "string (how this optimization helps)",
-                        "impact": "string (High/Medium/Low)"
-                    },
-                    "suggestion": "string (specific code suggestion)"
-                }
             }
         }
         

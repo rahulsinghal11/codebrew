@@ -42,4 +42,4 @@ ENV/
 Thumbs.db
 
 # Generated files
-data/suggestions/suggestion_*.json 
+data/suggestions/suggestion_*.json

@@ -130,14 +130,30 @@ Focus on the relationships between files and how they can be optimized together.
             try:
                 # Clean up the content string
                 if isinstance(content, str):
-                    # Remove markdown code block markers if present
-                    if content.startswith("```json"):
-                        content = content.replace("```json", "", 1)
-                    if content.endswith("```"):
-                        content = content.replace("```", "", 1)
-                    content = content.strip()
-                
-                return json.loads(content)
+                    # Find the first occurrence of a JSON object
+                    start_idx = content.find('{')
+                    if start_idx == -1:
+                        raise json.JSONDecodeError("No JSON object found", content, 0)
+                    
+                    # Find the matching closing brace
+                    brace_count = 0
+                    end_idx = -1
+                    for i in range(start_idx, len(content)):
+                        if content[i] == '{':
+                            brace_count += 1
+                        elif content[i] == '}':
+                            brace_count -= 1
+                            if brace_count == 0:
+                                end_idx = i + 1
+                                break
+                    
+                    if end_idx == -1:
+                        raise json.JSONDecodeError("No matching closing brace found", content, len(content))
+                    
+                    # Extract just the JSON part
+                    json_content = content[start_idx:end_idx]
+                    return json.loads(json_content)
+                    
             except json.JSONDecodeError as e:
                 import traceback
                 print(f"Error parsing response as JSON:")
