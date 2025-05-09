@@ -55,15 +55,28 @@ def analyze_code_with_bedrock(code: str) -> Dict[str, Any]:
             contentType="application/json",
             accept="application/json",
             body=json.dumps({
-                "prompt": prompt,
+                "anthropic_version": "bedrock-2023-05-31",
                 "max_tokens": 1024,
+                "top_k": 250,
+                "stop_sequences": [],
                 "temperature": 0.5,
-                "stop_sequences": ["\n\nHuman:"]
+                "top_p": 0.999,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": prompt
+                            }
+                        ]
+                    }
+                ]
             })
         )
 
         response_body = json.loads(response["body"].read())
-        model_output = response_body.get("completion")
+        model_output = response_body.get("content", [{}])[0].get("text", "")
 
         try:
             return json.loads(model_output)
