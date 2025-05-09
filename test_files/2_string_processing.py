@@ -2,12 +2,8 @@ def count_word_frequency(text):
     """Count frequency of each word in text"""
     words = text.split()
     frequency = {}
-    
     for word in words:
-        if word in frequency:
-            frequency[word] = frequency[word] + 1
-        else:
-            frequency[word] = 1
+        frequency[word] = frequency.get(word, 0) + 1
             
     return frequency
 
