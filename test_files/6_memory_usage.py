@@ -15,7 +15,7 @@ def process_matrix(matrix):
 
 # Example usage
 if __name__ == "__main__":
-    # Create a large matrix
+    matrix = [[0] * 1000 for _ in range(1000)]
     matrix = [[i + j for j in range(1000)] for i in range(1000)]
     result = process_matrix(matrix)
     print(f"Matrix processed: {len(result)}x{len(result[0])}") 
