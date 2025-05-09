@@ -2,8 +2,8 @@ def process_large_file(filename):
     """Process a large file line by line"""
     result = []
     with open(filename, 'r') as file:
-        lines = file.readlines()
-        for line in lines:
+        for line in file:
+            if line.strip():
             if line.strip():
                 result.append(line.strip())
     return result
