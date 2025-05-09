@@ -1,7 +1,9 @@
 # Global variables
-config = {}
-data = []
-results = []
+class DataProcessor:
+    def __init__(self):
+        self.config = {'max_items': 100, 'timeout': 30}
+        self.data = []
+        self.results = []
 
 def init():
     global config, data, results
