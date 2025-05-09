@@ -1,4 +1,5 @@
 import requests, base64
+import os
 
 def get_branch_sha(owner, repo, branch, token):
     url = f"https://api.github.com/repos/{owner}/{repo}/git/ref/heads/{branch}"
@@ -72,7 +73,7 @@ def create_pull_request(owner, repo, head_branch, base_branch, title, body, toke
     res = requests.post(url, json=data, headers=headers)
     res.raise_for_status()
     pr_url = res.json()["html_url"]
-    print(f"✅ Pull Request created: {pr_url}")
+    print(f"Pull Request created: {pr_url}")
     return pr_url
 
 
@@ -82,11 +83,12 @@ if __name__ == "__main__":
     OWNER = "rahulsinghal11"
     REPO = "codebrew"
     BASE_BRANCH = "master"
-    NEW_BRANCH = "ft/codebrew2"
-    FILE_PATH = "test_files/1_list_operations.py"
+    NEW_BRANCH = "ft/codebrew-refactor-global-variables-into-class"
+    FILE_PATH = "test_files/10_code_organization.py"
     TOKEN = os.getenv('GITHUB_TOKEN')
-    COMMIT_MSG = "Optimize find_common_elements with set operations"
-    NEW_CODE, START_LINE, END_LINE = "common = list(set(list1) & set(list2))", 3, 8
+    COMMIT_MSG = "Refactor global variables into class instance variables"
+    NEW_CODE = "class DataProcessor:\n    def __init__(self):\n        self.config = {'max_items': 100, 'timeout': 30}\n        self.data = []\n        self.results = []"
+    START_LINE, END_LINE = 2, 4
 
     # 1. Get SHA of base branch
     base_sha = get_branch_sha(OWNER, REPO, BASE_BRANCH, TOKEN)
