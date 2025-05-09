@@ -1,12 +1,11 @@
 import time
 
+from concurrent.futures import ThreadPoolExecutor
+
 def process_items(items):
-    """Process a list of items sequentially"""
-    results = []
-    for item in items:
-        # Simulate some processing time
-        time.sleep(0.1)
-        results.append(item * 2)
+    """Process a list of items concurrently"""
+    with ThreadPoolExecutor() as executor:
+        results = list(executor.map(lambda x: x * 2, items))
     return results
 
 # Example usage
