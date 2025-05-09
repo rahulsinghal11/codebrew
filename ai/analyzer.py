@@ -37,6 +37,15 @@ Code:
 ```
 """
 
+def clean_json_string(text: str) -> str:
+    """Clean JSON string by removing markdown code block markers"""
+    # Remove markdown code block markers if present
+    if text.startswith("```json"):
+        text = text.replace("```json", "", 1)
+    if text.endswith("```"):
+        text = text.replace("```", "", 1)
+    return text.strip()
+
 def analyze_code_with_bedrock(code: str) -> Dict[str, Any]:
     """
     Analyze code using Claude 3 Sonnet
@@ -88,7 +97,9 @@ def analyze_code_with_bedrock(code: str) -> Dict[str, Any]:
         print("📝 Model output:", model_output)
 
         try:
-            result = json.loads(model_output)
+            # Clean the JSON string before parsing
+            cleaned_output = clean_json_string(model_output)
+            result = json.loads(cleaned_output)
             print("✅ Successfully parsed JSON response")
             return result
         except json.JSONDecodeError as e:
