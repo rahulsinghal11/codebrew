@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 from typing import Dict, Any, Optional
 from datetime import datetime
+from utils.github_utils import GitHubCodeFetcher
 
 # Load environment variables
 load_dotenv()
@@ -140,7 +141,7 @@ Here is the Python code to analyze:
             # Clean and parse the JSON response
             cleaned_suggestion = clean_json_string(suggestion)
             json_suggestion = json.loads(cleaned_suggestion)
-            
+
             # Format and print the suggestion in a readable way
             print("\n📝 AI Suggestion:")
             print(f"\n🔍 Issue:")
@@ -178,7 +179,7 @@ def save_suggestion(file_analyzed: str, suggestion: str) -> str:
     # Save to file
     with open(filename, "w") as f:
         f.write(suggestion)
-    
+
     print(f"\n💾 Suggestion saved to: {filename}")
     return filename
 
@@ -188,11 +189,11 @@ def analyze_file(file_path: str) -> str:
         print(f"\n📂 Reading file: {file_path}")
         with open(file_path, "r") as f:
             code = f.read()
-        
+
         # Get file information
         file_name = os.path.basename(file_path)
         rel_path = os.path.relpath(file_path)
-        
+
         # Get repository name from git
         try:
             import subprocess
@@ -200,21 +201,46 @@ def analyze_file(file_path: str) -> str:
             repo_name = repo_url.split('/')[-1].replace('.git', '')
         except:
             repo_name = "codebrew"  # Default if git command fails
-        
+
         # Add file information to the code
         code_with_info = f"""Repository: {repo_name}
 File: {file_name}
 Path: {rel_path}
 
 {code}"""
-        
+
         suggestion = analyze_python_code(code_with_info)
         if suggestion:
             save_suggestion(file_path, suggestion)
         return suggestion
     except Exception as e:
-        print(f"Error reading file {file_path}: {str(e)}")
-        return None
+        print(f"⚠️ Error reading file {file_path}: {str(e)}")
+        return {}
+
+def analyze_github_file(github_url: str) -> Dict[str, Any]:
+    """
+    Analyze a Python file from GitHub and return improvement suggestions
+
+    Args:
+        github_url (str): GitHub URL to the Python file to analyze
+
+    Returns:
+        Dict[str, Any]: Analysis results with issue, code changes, benefit, and commit message
+    """
+    try:
+        print(f"🔗 Fetching code from GitHub: {github_url}")
+        fetcher = GitHubCodeFetcher()
+        code = fetcher.fetch_code_from_github(github_url)
+
+        if not code:
+            print("⚠️ Failed to fetch code from GitHub")
+            return {}
+
+        return analyze_code_with_bedrock(code)
+
+    except Exception as e:
+        print(f"⚠️ Error analyzing GitHub file: {str(e)}")
+        return {}
 
 if __name__ == "__main__":
     # Example usage
