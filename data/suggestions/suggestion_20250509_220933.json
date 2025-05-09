@@ -1,9 +1,0 @@
-{
-  "file": "src/flask/app.py",
-  "issue": "Potential best practice violation in context management",
-  "benefit": {
-    "explanation": "The `Flask` class uses context variables for managing application and request contexts. While context variables are generally efficient, their usage can lead to potential issues such as context leaks or unexpected behavior if not managed properly.",
-    "impact": "Medium"
-  },
-  "suggestion": "Implement additional checks and safeguards to ensure that application and request contexts are properly managed and cleaned up. This could involve implementing context-aware logging or debugging mechanisms, as well as providing clear documentation and guidelines for working with contexts in the application."
-}
