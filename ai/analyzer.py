@@ -10,7 +10,7 @@ load_dotenv()
 
 # Configuration
 region = os.getenv("AWS_REGION", "us-east-1")
-model_id = os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-3-7-sonnet-20250219-v1:0")
+model_id = "anthropic.claude-3-sonnet-20240229-v1:0"  # Updated model ID
 
 # Initialize Bedrock client
 client = boto3.client("bedrock-runtime", region_name=region)
@@ -39,7 +39,7 @@ Code:
 
 def analyze_code_with_bedrock(code: str) -> Dict[str, Any]:
     """
-    Analyze code using Claude 3.7 Sonnet
+    Analyze code using Claude 3 Sonnet
     
     Args:
         code (str): The code to analyze
