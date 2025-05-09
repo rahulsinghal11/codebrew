@@ -1,12 +1,12 @@
 def get_duplicates(arr):
-    duplicates = []
     seen = set()
+    duplicates = set()
     for num in arr:
         if num in seen:
-            duplicates.append(num)
+            duplicates.add(num)
         else:
             seen.add(num)
-    return duplicates
+    return list(duplicates)
 
 # Example usage
 if __name__ == "__main__":
