@@ -43,6 +43,11 @@ Return your response **strictly in this JSON format** (and nothing else):
 
 {{
   "issue": "What is the problem or opportunity for improvement?",
+  "repo_name": "Name of the repository",
+  "file_path": "Path relative to repository root",
+  "file_name": "Name of the file being modified",
+  "start_line": "Line number where the change starts (1-based)",
+  "end_line": "Line number where the change ends (1-based)",
   "old_code": "The original snippet (minimum necessary to understand the fix)",
   "new_code": "The improved version (clean, correct, tested)",
   "benefit": "A short explanation of why this change is useful. Include % improvement if it's a speed boost.",
@@ -53,6 +58,11 @@ Example:
 
 {{
   "issue": "Inefficient nested loops to find duplicates",
+  "repo_name": "codebrew",
+  "file_path": "src/utils/duplicate_finder.py",
+  "file_name": "duplicate_finder.py",
+  "start_line": 10,
+  "end_line": 15,
   "old_code": "for i in range(len(arr)):\\n    for j in range(i+1, len(arr)):\\n        if arr[i] == arr[j]:",
   "new_code": "seen = set()\\nfor item in arr:\\n    if item in seen:\\n        ...",
   "benefit": "Reduces time complexity from O(n^2) to O(n); ~80% faster on large inputs.",
@@ -130,7 +140,26 @@ def analyze_file(file_path: str) -> str:
         with open(file_path, "r") as f:
             code = f.read()
         
-        suggestion = analyze_python_code(code)
+        # Get file information
+        file_name = os.path.basename(file_path)
+        rel_path = os.path.relpath(file_path)
+        
+        # Get repository name from git
+        try:
+            import subprocess
+            repo_url = subprocess.check_output(['git', 'config', '--get', 'remote.origin.url'], text=True).strip()
+            repo_name = repo_url.split('/')[-1].replace('.git', '')
+        except:
+            repo_name = "codebrew"  # Default if git command fails
+        
+        # Add file information to the code
+        code_with_info = f"""Repository: {repo_name}
+File: {file_name}
+Path: {rel_path}
+
+{code}"""
+        
+        suggestion = analyze_python_code(code_with_info)
         if suggestion:
             save_suggestion(file_path, suggestion)
         return suggestion

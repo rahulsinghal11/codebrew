@@ -1,7 +1,0 @@
-{
-  "issue": "Reading the entire file into memory before processing",
-  "old_code": "lines = file.readlines()",
-  "new_code": "for line in file:\n    if line.strip():\n        result.append(line.strip())",
-  "benefit": "Avoids loading large files entirely into memory, reducing memory usage and allowing processing of files larger than available RAM.",
-  "commit_message": "Process large files line-by-line to reduce memory footprint"
-}

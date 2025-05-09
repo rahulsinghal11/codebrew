@@ -1,7 +1,0 @@
-{
-  "issue": "The global variables are not needed and make the code harder to reason about",
-  "old_code": "config = {}\ndata = []\nresults = []\n\ndef init():\n    global config, data, results\n    config = {'max_items': 100, 'timeout': 30}\n    data = []\n    results = []",
-  "new_code": "def init():\n    config = {'max_items': 100, 'timeout': 30}\n    data = []\n    results = []\n    return config, data, results",
-  "benefit": "Removes the need for global variables, making the code easier to reason about and less prone to unintended mutations. It also allows the init function to be used in a more functional style.",
-  "commit_message": "Remove global variables for better code simplicity"
-}

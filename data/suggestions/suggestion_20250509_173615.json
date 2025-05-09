@@ -1,7 +1,0 @@
-{
-  "issue": "Checking dictionary membership twice",
-  "old_code": "if word in frequency:\n            frequency[word] = frequency[word] + 1\n        else:\n            frequency[word] = 1",
-  "new_code": "frequency[word] = frequency.get(word, 0) + 1",
-  "benefit": "Avoids checking the dictionary twice, improving runtime performance and readability.",
-  "commit_message": "Use dict.get() to simplify word frequency counting"
-}

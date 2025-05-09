@@ -1,7 +1,0 @@
-{
-  "issue": "Redundant modulo operations in inner loop",
-  "old_code": "for i in range(2, num):\n    if num % i == 0:\n        is_prime = False\n        break",
-  "new_code": "for i in range(2, int(num**0.5) + 1):\n    if num % i == 0:\n        is_prime = False\n        break",
-  "benefit": "Reduces the number of modulo operations, speeding up the function by ~30% on large inputs by avoiding redundant checks.",
-  "commit_message": "Optimize prime check with sqrt bound"
-}
