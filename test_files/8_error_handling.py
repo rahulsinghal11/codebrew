@@ -2,8 +2,8 @@ def divide_numbers(a, b):
     """Divide two numbers"""
     try:
         result = a / b
-        return result
-    except:
+    except ZeroDivisionError:
+        print(f"Error: Cannot divide {a} by 0")
         return None
 
 def process_division(numbers):
