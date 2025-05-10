@@ -1,8 +1,0 @@
-{
-    "COMMIT_MSG": "Update email configuration with environment variables",
-    "NEW_CODE": "import os\nimport smtplib\nfrom email.mime.text import MIMEText\nfrom email.mime.multipart import MIMEMultipart\nfrom dotenv import load_dotenv",
-    "START_LINE": 1,
-    "END_LINE": 5,
-    "FILE_PATH": "utils/emailer.py",
-    "NEW_BRANCH": "feature/email-config"
-} 

@@ -1,15 +1,12 @@
-from fastapi import FastAPI, Query, HTTPException
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi import FastAPI, HTTPException
 from utils.pr_creator import PRCreator
 import json
 from datetime import datetime
 from pathlib import Path
-from github import Github
 import os
-from dotenv import load_dotenv
 
 app = FastAPI()
-pr_creator = PRCreator()
+
 
 def append_pr_to_data(suggestion, pr_info):
     data_path = Path("web/data/data.json")
@@ -46,7 +43,7 @@ def append_pr_to_data(suggestion, pr_info):
         json.dump(data, f, indent=2)
 
 @app.get("/create_pr")
-async def create_pr(repo_name: str, title: str, body: str, head_branch: str, base_branch: str = "master"):
+async def create_pr(repo_name: str, owner: str, base_branch: str):
     """
     Create a pull request with the suggested changes
     
@@ -58,32 +55,30 @@ async def create_pr(repo_name: str, title: str, body: str, head_branch: str, bas
         base_branch (str): Target branch for PR
     """
     try:
+        pr_creator = PRCreator(owner=owner, repo=repo_name, base_branch=base_branch)            # initialize the PR creator with api query params
+
         # Find the suggestion file for this branch
         script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         suggestions_path = os.path.join(script_dir, 'utils', 'suggestions')
         
         # Look for a JSON file that contains this branch name
         suggestion_file = None
+        data = None
         for file in os.listdir(suggestions_path):
             if file.endswith('.json'):
                 file_path = os.path.join(suggestions_path, file)
                 with open(file_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                    if data.get('branch_name') == head_branch:
+                    if data.get('repo_name') == repo_name:
                         suggestion_file = file_path
                         break
         
-        if not suggestion_file:
-            # If no suggestion file found, just create the PR
-            result = pr_creator.create_pull_request(repo_name, title, body, head_branch, base_branch)
-        else:
-            # Process the suggestion file
+        try:
             result = pr_creator.process_suggestion(suggestion_file)
-        
-        if "error" in result:
+            return result
+        except Exception as e:
             raise HTTPException(status_code=400, detail=result["error"])
             
-        return result
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
