@@ -8,6 +8,7 @@ from datetime import datetime
 from utils.github_utils import GitHubCodeFetcher
 import requests
 from .bedrock_client import BedrockClient
+from utils.text_utils import clean_json_string
 
 # Load environment variables
 load_dotenv()
@@ -54,39 +55,27 @@ Provide the analysis in this JSON format:
             print(f"Error analyzing code: {str(e)}")
             return None
 
-    def analyze_multiple_files(self, files: List[Dict]) -> List[Dict]:
-        """Analyze multiple files in a single Bedrock request"""
+    def analyze_multiple_files(self, files: List[Dict]) -> Optional[Dict]:
+        """Analyze multiple files and return the single highest-impact suggestion"""
         # Prepare the files section of the prompt
         files_section = "\n\n".join([
             f"File: {file['name']}\nPath: {file['path']}\n\n{file['content']}"
             for file in files
         ])
 
-        prompt = f"""You are an expert code reviewer. Analyze these files and suggest optimizations for each one. Focus on:
-1. Performance improvements
-2. Code quality
-3. Best practices
-4. Potential bugs
+        # Read the prompt template
+        try:
+            with open('prompts/code_analysis.txt', 'r') as f:
+                prompt_template = f.read()
+        except FileNotFoundError:
+            print("Error: prompts/code_analysis.txt not found")
+            return None
+        except Exception as e:
+            print(f"Error reading prompt template: {str(e)}")
+            return None
 
-Files to analyze:
-
-{files_section}
-
-Provide the analysis in this JSON format:
-{{
-    "analyses": [
-        {{
-            "file": "filename.py",
-            "issue": "Description of the issue found",
-            "benefit": {{
-                "explanation": "How this optimization helps",
-                "impact": "High/Medium/Low"
-            }},
-            "suggestion": "Specific code suggestion"
-        }},
-        // ... one entry per file
-    ]
-}}"""
+        # Format the prompt with the files section
+        prompt = prompt_template.format(files_section=files_section)
 
         try:
             response = self.bedrock.generate_text(prompt)
@@ -94,32 +83,19 @@ Provide the analysis in this JSON format:
                 try:
                     # If response is already a dict, use it directly
                     if isinstance(response, dict):
-                        return response.get("analyses", [])
+                        return response
                         
                     # Otherwise, try to parse it as JSON string
                     cleaned_response = clean_json_string(response)
-                    json_response = json.loads(cleaned_response)
-                    return json_response.get("analyses", [])
+                    return json.loads(cleaned_response)
                 except json.JSONDecodeError as e:
                     print(f"Error parsing analysis JSON: {str(e)}")
                     print("Raw response:", response)
-                    return []
-            return []
+                    return None
+            return None
         except Exception as e:
             print(f"Error analyzing files: {str(e)}")
-            return []
-
-def clean_json_string(text: str) -> str:
-    """Clean JSON string by removing markdown code block markers"""
-    if isinstance(text, dict):
-        return text
-    if isinstance(text, str):
-        if text.startswith("```json"):
-            text = text.replace("```json", "", 1)
-        if text.endswith("```"):
-            text = text.replace("```", "", 1)
-        return text.strip()
-    return text
+            return None
 
 def analyze_python_code(code: str) -> str:
     """Analyze Python code and return improvement suggestions"""
@@ -406,8 +382,8 @@ def analyze_github_file(file_url: str) -> Optional[Dict]:
         print(f"Error analyzing file: {str(e)}")
         return None
 
-def analyze_github_files(file_urls: List[Dict]) -> List[Dict]:
-    """Analyze multiple files from GitHub"""
+def analyze_github_files(file_urls: List[Dict]) -> Optional[Dict]:
+    """Analyze multiple files from GitHub and return the highest-impact suggestion"""
     try:
         github_token = os.getenv('GITHUB_TOKEN')
         if not github_token:
@@ -415,93 +391,60 @@ def analyze_github_files(file_urls: List[Dict]) -> List[Dict]:
         
         headers = {
             'Authorization': f'token {github_token}',
-            'Accept': 'application/vnd.github.v3.raw'
+            'Accept': 'application/vnd.github.v3+json'
         }
         
-        # Fetch file contents and build dependency graph
+        # Fetch file contents
         files_to_analyze = []
-        dependency_graph = {}
-        
         for file_info in file_urls:
             try:
                 response = requests.get(file_info['url'], headers=headers)
                 response.raise_for_status()
-                content = response.text
-                
-                # Simple import analysis to build dependency graph
-                imports = []
-                for line in content.split('\n'):
-                    if line.startswith('import ') or line.startswith('from '):
-                        imports.append(line.strip())
-                
-                file_name = file_info['name']
-                dependency_graph[file_name] = imports
-                
                 files_to_analyze.append({
-                    'name': file_name,
-                    'path': file_info['url'],
-                    'content': content,
-                    'dependencies': imports,
-                    'type': 'core' if 'app.py' in file_name or 'core' in file_name else 'module'
+                    'name': file_info['name'],
+                    'path': file_info['name'],
+                    'content': response.text
                 })
-                
-            except requests.exceptions.RequestException as e:
-                import traceback
-                print(f"Error fetching file {file_info['name']}:")
-                print(traceback.format_exc())
-                continue
+            except Exception as e:
+                print(f"Error fetching {file_info['name']}: {str(e)}")
         
         if not files_to_analyze:
             print("No files were successfully fetched")
-            return []
+            return None
         
-        # Prepare structured data for analysis
-        structured_data = {
-            'repository': {
-                'name': 'flask',
-                'branch': 'main',
-                'total_files': len(files_to_analyze)
-            },
-            'files': files_to_analyze,
-            'analysis_requirements': {
-                'focus_areas': [
-                    'Code quality and maintainability',
-                    'Performance optimization',
-                    'Security considerations',
-                    'Best practices'
-                ],
-                'priority_files': [f['name'] for f in files_to_analyze if f['type'] == 'core']
-            }
-        }
+        print(f"\n🔍 Successfully fetched {len(files_to_analyze)} files")
         
         # Analyze files using Bedrock
         bedrock_client = BedrockClient()
-        analysis_results = bedrock_client.analyze_structured_data(structured_data)
+        analysis_result = bedrock_client.analyze_multiple_files(files_to_analyze)
         
-        if analysis_results:
-            # Save all analyses in a single JSON file
+        if analysis_result:
+            # Save the analysis
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             suggestion_file = f"data/suggestions/suggestion_{timestamp}.json"
             
-            # Print each analysis
-            if isinstance(analysis_results, dict) and 'analyses' in analysis_results:
-                for analysis in analysis_results['analyses']:
-                    print(f"\n📝 Analysis for {analysis['file']}:")
-                    print(f"Issue: {analysis['issue']}")
-                    print(f"Benefit: {analysis['benefit']['explanation']}")
+            # Print the analysis
+            print(f"\n📝 Analysis for {analysis_result.get('file_name', analysis_result.get('file', 'unknown'))}:")
+            print(f"Issue: {analysis_result.get('issue', 'No issue found')}")
+            print(f"Benefit: {analysis_result.get('benefit', 'No benefit specified')}")
+            if 'old_code' in analysis_result:
+                print(f"\nOld code:")
+                print(analysis_result['old_code'])
+                print(f"\nNew code:")
+                print(analysis_result['new_code'])
             
             # Save the full analysis
-            save_suggestion(suggestion_file, json.dumps(analysis_results, indent=2))
+            save_suggestion(suggestion_file, json.dumps(analysis_result, indent=2))
             print(f"\n💾 Suggestion saved to: {suggestion_file}")
             
-            return analysis_results['analyses'] if 'analyses' in analysis_results else []
+            return analysis_result
         
-        return []
+        return None
     except Exception as e:
         import traceback
         print("Error in analyze_github_files:")
         print(traceback.format_exc())
-        return []
+        return None
 
 if __name__ == "__main__":
     # Example usage

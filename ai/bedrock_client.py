@@ -4,6 +4,7 @@ from typing import Dict, Any, Optional, List
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+from utils.text_utils import extract_json_from_text
 
 class BedrockClient:
     def __init__(self):
@@ -29,9 +30,24 @@ class BedrockClient:
             
             response_body = json.loads(response.get('body').read())
             content = response_body.get('content', [{}])[0].get('text', '{}')
+            
+            # Try to parse the content as JSON
             try:
-                return json.loads(content)
+                # First try parsing directly
+                result = json.loads(content)
+                
+                # If the result is a string, it might be a JSON string
+                if isinstance(result, str):
+                    try:
+                        # Try parsing the string as JSON
+                        result = json.loads(result)
+                    except json.JSONDecodeError:
+                        # If that fails, return the string as is
+                        return {"issue": result}
+                
+                return result
             except json.JSONDecodeError:
+                # If parsing fails, return the content as is
                 return {"issue": content}
             
         except Exception as e:
@@ -166,6 +182,42 @@ Focus on the relationships between files and how they can be optimized together.
             import traceback
             print(f"Error analyzing structured data with Bedrock:")
             print(traceback.format_exc())
+            return None
+
+    def analyze_multiple_files(self, files: List[Dict]) -> Optional[Dict]:
+        """Analyze multiple files and return the single highest-impact suggestion"""
+        # Prepare the files section of the prompt
+        files_section = "\n\n".join([
+            f"File: {file['name']}\nPath: {file['path']}\n\n{file['content']}"
+            for file in files
+        ])
+
+        # Read the prompt template
+        try:
+            with open('prompts/code_analysis.txt', 'r') as f:
+                prompt_template = f.read()
+        except FileNotFoundError:
+            print("Error: prompts/code_analysis.txt not found")
+            return None
+        except Exception as e:
+            print(f"Error reading prompt template: {str(e)}")
+            return None
+
+        # Format the prompt with the files section
+        prompt = prompt_template.format(files_section=files_section)
+        print("\nPrompt being sent to model:", prompt)
+
+        try:
+            response = self.generate_text(prompt)
+            if response:
+                print("\n🔍 Raw response from model:")
+                print(response)
+                
+                # Return the analyses object directly
+                return response.get('analyses')
+            return None
+        except Exception as e:
+            print(f"Error analyzing files: {str(e)}")
             return None
 
 if __name__ == "__main__":
