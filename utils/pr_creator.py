@@ -1,5 +1,7 @@
 import requests, base64
 import os
+from pathlib import Path
+import json
 
 def get_branch_sha(owner, repo, branch, token):
     url = f"https://api.github.com/repos/{owner}/{repo}/git/ref/heads/{branch}"
@@ -77,32 +79,47 @@ def create_pull_request(owner, repo, head_branch, base_branch, title, body, toke
     return pr_url
 
 
+def load_suggestion(file_path):
+    """Load a suggestion from a JSON file."""
+    print(file_path)
+    with open(file_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+        return data['commit_message'], data['new_code'], data['start_line'], data['end_line'], data['file_path'], data['branch_name']
+
 
 if __name__ == "__main__":
     
     OWNER = "rahulsinghal11"
     REPO = "codebrew"
     BASE_BRANCH = "master"
-    NEW_BRANCH = "ft/codebrew-refactor-global-variables-into-class"
-    FILE_PATH = "test_files/10_code_organization.py"
     TOKEN = os.getenv('GITHUB_TOKEN')
-    COMMIT_MSG = "Refactor global variables into class instance variables"
-    NEW_CODE = "class DataProcessor:\n    def __init__(self):\n        self.config = {'max_items': 100, 'timeout': 30}\n        self.data = []\n        self.results = []"
-    START_LINE, END_LINE = 2, 4
+    
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    suggestions_path = os.path.join(script_dir, 'suggestions')
+    json_files = [os.path.join(suggestions_path, f) for f in os.listdir(suggestions_path) if f.endswith('.json')]
+    suggestions = []
+    for file_path in json_files:
+        try:
+            COMMIT_MSG, NEW_CODE, START_LINE, END_LINE, FILE_PATH, NEW_BRANCH = load_suggestion(str(file_path))
+            # print(f"Loaded suggestion from {file_path}")
 
-    # 1. Get SHA of base branch
-    base_sha = get_branch_sha(OWNER, REPO, BASE_BRANCH, TOKEN)
+            # 1. Get SHA of base branch
+            base_sha = get_branch_sha(OWNER, REPO, BASE_BRANCH, TOKEN)
 
-    # 2. Create new branch from base
-    create_branch(OWNER, REPO, base_sha, TOKEN, new_branch=NEW_BRANCH)
+            # 2. Create new branch from base
+            create_branch(OWNER, REPO, base_sha, TOKEN, new_branch=NEW_BRANCH)
 
-    # 3. Read file contents from base branch
-    updated_content, file_sha = get_file(OWNER, REPO, FILE_PATH, BASE_BRANCH, TOKEN, NEW_CODE, START_LINE, END_LINE)
+            # 3. Read file contents from base branch
+            updated_content, file_sha = get_file(OWNER, REPO, FILE_PATH, BASE_BRANCH, TOKEN, NEW_CODE, START_LINE, END_LINE)
 
-    # 5. Commit and push to new branch
-    update_file(OWNER, REPO, FILE_PATH, updated_content, COMMIT_MSG, NEW_BRANCH, file_sha, TOKEN)
+            # 5. Commit and push to new branch
+            update_file(OWNER, REPO, FILE_PATH, updated_content, COMMIT_MSG, NEW_BRANCH, file_sha, TOKEN)
 
-    create_pull_request(OWNER, REPO, NEW_BRANCH, BASE_BRANCH, COMMIT_MSG, "", TOKEN)
+            create_pull_request(OWNER, REPO, NEW_BRANCH, BASE_BRANCH, COMMIT_MSG, "", TOKEN)
 
-    print(f"Changes pushed to branch {NEW_BRANCH}")
+            print(f"Changes pushed to branch {NEW_BRANCH}")
+
+        except Exception as e:
+            print(f"Error loading suggestion from {file_path}: {str(e)}")
+
 

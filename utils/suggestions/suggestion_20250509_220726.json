@@ -1,0 +1,13 @@
+{
+  "issue": "Inefficient memory usage when processing large files",
+  "repo_name": "codebrew",
+  "file_path": "test_files/3_file_operations.py",
+  "file_name": "3_file_operations.py",
+  "start_line": 5,
+  "end_line": 6,
+  "old_code": "        lines = file.readlines()\n        for line in lines:",
+  "new_code": "        for line in file:\n            if line.strip():",
+  "benefit": "Reduces memory usage by reading the file line by line instead of loading the entire file into memory at once. Especially beneficial for very large files.",
+  "commit_message": "Optimize memory usage for large file processing",
+  "branch_name": "optimize-large-file-processing"
+}
