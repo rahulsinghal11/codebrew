@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 from typing import Dict, Any, Optional
 from datetime import datetime
+from utils.emailer import Emailer
 
 # Load environment variables
 load_dotenv()
@@ -15,9 +16,15 @@ model_id = os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-3-sonnet-20240229-v1:
 max_tokens = int(os.getenv("BEDROCK_MAX_TOKENS", "1000"))
 temperature = float(os.getenv("BEDROCK_TEMPERATURE", "0.1"))
 suggestions_dir = os.getenv("SUGGESTIONS_DIR", "data/suggestions")
+notification_email = os.getenv("NOTIFICATION_EMAIL")
 
-# Initialize Bedrock client
-client = boto3.client("bedrock-runtime", region_name=region)
+# Initialize Bedrock client with explicit credentials
+client = boto3.client(
+    "bedrock-runtime",
+    region_name=region,
+    aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+    aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
+)
 
 def clean_json_string(text: str) -> str:
     """Clean JSON string by removing markdown code block markers"""
@@ -167,7 +174,7 @@ Here is the Python code to analyze:
         return None
 
 def save_suggestion(file_analyzed: str, suggestion: str) -> str:
-    """Save the AI suggestion to a JSON file"""
+    """Save the AI suggestion to a JSON file and send email notification"""
     # Create data directory if it doesn't exist
     os.makedirs(suggestions_dir, exist_ok=True)
     
@@ -180,6 +187,161 @@ def save_suggestion(file_analyzed: str, suggestion: str) -> str:
         f.write(suggestion)
     
     print(f"\n💾 Suggestion saved to: {filename}")
+
+    # Send email notification if email is configured
+    if notification_email:
+        try:
+            print(f"\n📧 Sending email to: {notification_email}")
+            emailer = Emailer()
+            suggestion_data = json.loads(suggestion)
+            
+            # Format code blocks with proper indentation
+            def format_code(code: str) -> str:
+                if not code:
+                    return "N/A"
+                return code  # Preserve all indentation and formatting
+            
+            repo_name = 'rahulsinghal11/codebrew'  # Hardcoded correct repo name
+            # Build the Create PR button URL
+            pr_url = (
+                f"http://localhost:8000/create_pr?"
+                f"repo_name={repo_name}"
+                f"&title={suggestion_data.get('commit_message', '')}"
+                f"&body={suggestion_data.get('benefit', '')}"
+                f"&head_branch={suggestion_data.get('branch_name', '')}"
+                f"&base_branch=master"
+            )
+
+            # Create beautiful email body
+            body = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body {{
+                        font-family: Arial, sans-serif;
+                        line-height: 1.6;
+                        color: #333;
+                        max-width: 800px;
+                        margin: 0 auto;
+                        padding: 20px;
+                    }}
+                    .header {{
+                        background-color: #2c3e50;
+                        color: white;
+                        padding: 20px;
+                        border-radius: 5px;
+                        margin-bottom: 20px;
+                    }}
+                    .content {{
+                        background-color: #f8f9fa;
+                        padding: 20px;
+                        border-radius: 5px;
+                        margin-bottom: 20px;
+                    }}
+                    .code-block {{
+                        background-color: #f1f1f1;
+                        padding: 15px;
+                        border-radius: 5px;
+                        font-family: 'Courier New', monospace;
+                        white-space: pre;
+                        margin: 10px 0;
+                        overflow-x: auto;
+                        tab-size: 4;
+                    }}
+                    .benefit {{
+                        background-color: #e8f5e9;
+                        padding: 15px;
+                        border-radius: 5px;
+                        margin: 10px 0;
+                    }}
+                    .footer {{
+                        text-align: center;
+                        margin-top: 20px;
+                        color: #666;
+                        font-size: 0.9em;
+                    }}
+                    .pr-btn {{
+                        display: inline-block;
+                        padding: 12px 28px;
+                        font-size: 1.1em;
+                        color: #fff !important;
+                        background-color: #1976d2;
+                        border: none;
+                        border-radius: 5px;
+                        text-decoration: none;
+                        margin: 20px 0;
+                        font-weight: bold;
+                        transition: background 0.2s;
+                    }}
+                    .pr-btn:hover {{
+                        background-color: #125ea2;
+                    }}
+                    h1, h2, h3 {{
+                        color: #2c3e50;
+                    }}
+                    .badge {{
+                        display: inline-block;
+                        padding: 5px 10px;
+                        border-radius: 15px;
+                        font-size: 0.8em;
+                        margin-right: 10px;
+                        background-color: #e3f2fd;
+                        color: #1976d2;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="content">
+                    <h2>📝 Improvement Details</h2>
+                    <p><strong>Repository:</strong> {repo_name}</p>
+                    <p><strong>File:</strong> {file_analyzed}</p>
+                    <p><strong>Issue:</strong> {suggestion_data.get('issue', 'N/A')}</p>
+                    
+                    <div class="benefit">
+                        <h3>🎯 Benefit</h3>
+                        <p>{suggestion_data.get('benefit', 'N/A')}</p>
+                    </div>
+                    
+                    <h3>🔧 Code Changes</h3>
+                    <p><strong>Original Code:</strong></p>
+                    <div class="code-block">
+{format_code(suggestion_data.get('old_code', 'N/A'))}
+                    </div>
+                    <p><strong>Improved Code:</strong></p>
+                    <div class="code-block">
+{format_code(suggestion_data.get('new_code', 'N/A'))}
+                    </div>
+                    <a href='{pr_url}' class='pr-btn' target='_blank'>🚀 Create PR</a>
+                    <p>
+                        <span class="badge">Commit</span> {suggestion_data.get('commit_message', 'N/A')}
+                        <span class="badge">Branch</span> {suggestion_data.get('branch_name', 'N/A')}
+                    </p>
+                </div>
+                
+                <div class="footer">
+                    <p>Generated by CodeBrew AI Code Optimizer</p>
+                    <p>Time: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
+                </div>
+            </body>
+            </html>
+            """
+            
+            result = emailer.send_email(
+                to_email=notification_email,
+                subject=f"✨ CodeBrew [{repo_name}]: {suggestion_data.get('commit_message', 'Code Improvement')}",
+                body=body,
+                is_html=True
+            )
+            
+            if result["status"] == "success":
+                print("📧 Email notification sent successfully")
+            else:
+                print(f"⚠️ Failed to send email notification: {result['message']}")
+                
+        except Exception as e:
+            print(f"⚠️ Error sending email notification: {str(e)}")
+    
     return filename
 
 def analyze_file(file_path: str) -> str:
