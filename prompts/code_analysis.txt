@@ -24,7 +24,7 @@ Files to analyze:
 
 {files_section}
 
-Return your response **strictly in this JSON format** (and nothing else):
+Return a single, top-level JSON object as your entire response. Do NOT wrap it in a string, do NOT add any explanation, do NOT use markdown, do NOT include any text before or after.
 
 {{
     "before": "Any explanation or context before the analysis",
