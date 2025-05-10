@@ -1,4 +1,4 @@
-# CodeBrew: AI-Powered Code Review, Suggestion, and Automation Platform
+# CodeBrew: AI-Powered GitHub Repo Analyzer, Suggestion, and Automation Platform
 
 ![CodeBrew Logo](https://img.shields.io/badge/AI%20Code%20Review-Automated-blueviolet?style=for-the-badge)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=for-the-badge)
@@ -8,14 +8,16 @@
 
 ## 🚀 Overview
 
-**CodeBrew** is an advanced AI-powered platform that analyzes Python code, generates actionable improvement suggestions, and automates the process of creating pull requests and sending email digests. It is designed for teams and individuals who want to supercharge their code quality, automate code reviews, and streamline the process of applying best practices.
+**CodeBrew** is an advanced AI-powered platform that automatically selects random GitHub repositories from a configured list, fetches their code using the GitHub API, analyzes them for improvements, and automates the process of creating pull requests and sending email digests. It is designed for teams and individuals who want to supercharge their code quality, automate code reviews, and streamline the process of applying best practices across multiple repositories.
 
 ---
 
 ## ✨ Features
 
+- **Random GitHub Repo Selection:**  
+  Automatically selects repositories from `data/repositories.txt` or `data/repo_urls.txt` for analysis.
 - **AI Code Analysis:**  
-  Uses AWS Bedrock (Claude 3) to analyze Python code for performance, readability, best practices, and SQL/import optimizations.
+  Uses AWS Bedrock (Claude 3) to analyze code for performance, readability, best practices, and SQL/import optimizations.
 - **Actionable Suggestions:**  
   Generates detailed, context-aware suggestions with before/after code, benefit explanations, and commit messages.
 - **Automated Email Digests:**  
@@ -23,13 +25,15 @@
 - **One-Click PR Automation:**  
   FastAPI backend lets you create a GitHub pull request with the suggested change in one click.
 - **Branch & File Automation:**  
-  Automatically creates branches, updates files, commits changes, and opens PRs on GitHub.
+  Automatically creates branches, updates files, commits changes, and opens PRs on GitHub using the GitHub REST API.
 - **Suggestion Logging:**  
   All suggestions and PRs are logged for audit and tracking.
 - **Multi-Repo Support:**  
-  Analyze local files or fetch/analyze files from GitHub repositories.
+  Analyze any public or private GitHub repository (with access).
 - **Secure & Configurable:**  
   Uses `.env` for all secrets and supports AWS, GitHub, and SMTP integrations.
+- **Extensible & Cross-Platform:**  
+  Easily add new analysis logic, email templates, or endpoints. Works on Windows, Mac, and Linux.
 
 ---
 
@@ -39,10 +43,13 @@
 .
 ├── ai/                  # AI analyzer and Bedrock client
 ├── data/                # Suggestions, repo lists, and sample data
+│   ├── repositories.txt # List of GitHub repos to analyze
+│   ├── repo_urls.txt    # Alternative repo list (one per line)
+│   └── suggestions/     # Saved suggestions (JSON) - must exist!
 ├── utils/               # Email, PR, GitHub, and text utilities
 ├── web/                 # FastAPI backend for PR automation
 ├── test_files/          # Example files for testing
-├── main.py              # Entry point for local analysis
+├── main.py              # Entry point for orchestrating analysis
 ├── requirements.txt     # Python dependencies
 ├── .env                 # Environment variables (not committed)
 └── README.md            # This file
@@ -85,7 +92,7 @@ BEDROCK_MAX_TOKENS=1000
 BEDROCK_TEMPERATURE=0.1
 
 # GitHub
-GITHUB_TOKEN=your_github_pat
+GITHUB_TOKEN=your_github_pat  # Must have repo access for private repos
 
 # Email (SMTP)
 SMTP_SERVER=smtp.gmail.com
@@ -98,38 +105,49 @@ NOTIFICATION_EMAIL=your-email@gmail.com
 SUGGESTIONS_DIR=data/suggestions
 ```
 
+### 4. Configure Repositories to Analyze
+
+- Add GitHub repository URLs (one per line) to `data/repositories.txt` or `data/repo_urls.txt`.
+- The system will randomly select from these for analysis.
+
 ---
 
 ## 🧠 How It Works
 
-1. **Analyze Code:**  
-   Run the analyzer on a file or repo. The AI suggests a high-impact, safe, and local improvement.
-2. **Save Suggestion:**  
+1. **Random Repo Selection:**  
+   The system randomly selects a GitHub repository from your configured list.
+2. **Fetch & Analyze:**  
+   It fetches code files from the selected repo using the GitHub API and uses AI to analyze them for high-impact, safe, and local improvements.
+3. **Save Suggestion:**  
    Suggestions are saved as JSON in `data/suggestions/`.
-3. **Email Notification:**  
+4. **Email Notification:**  
    An HTML email is sent with the improvement, code diff, and a "Create PR" button.
-4. **Create PR:**  
+5. **Create PR:**  
    Clicking the button calls a FastAPI endpoint, which:
-   - Creates a new branch from the base
-   - Updates the file with the improved code
-   - Commits and pushes the change
-   - Opens a pull request on GitHub
+   - Creates a new branch from the base (via GitHub API)
+   - Updates the file with the improved code (via GitHub API)
+   - Commits and pushes the change (via GitHub API)
+   - Opens a pull request on GitHub (via GitHub API)
 
 ---
 
 ## 🛠️ Usage
 
-### Analyze a File
+### Run the Analyzer (Random Repo Selection)
 
 ```bash
-python main.py path/to/your/file.py
+python main.py
 ```
+
+- This will randomly select a repo, fetch its code, analyze it, and generate a suggestion.
 
 ### Run the FastAPI Server
 
 ```bash
 .venv\Scripts\python.exe -m uvicorn web.pr_api:app --reload --port 8000
 ```
+
+- The FastAPI backend exposes endpoints (e.g., `/create_pr`) for PR automation, which can be triggered from email links or directly via HTTP requests.
 
 ### Send a Test Email
 
@@ -159,7 +177,7 @@ GET /create_pr?repo_name=owner/repo&owner=owner&base_branch=main
 ## 🔌 Integrations
 
 - **AWS Bedrock:** For AI code analysis (Claude 3)
-- **GitHub API:** For branch, commit, and PR automation
+- **GitHub REST API:** For fetching code, creating branches, updating files, and making PRs
 - **SMTP:** For sending notification emails
 
 ---
@@ -170,6 +188,7 @@ GET /create_pr?repo_name=owner/repo&owner=owner&base_branch=main
 - Customize email templates in `utils/emailer.py`
 - Add new FastAPI endpoints in `web/pr_api.py`
 - Add more code analysis logic in `ai/analyzer.py`
+- Works on Windows, Mac, and Linux
 
 ---
 
@@ -179,6 +198,23 @@ GET /create_pr?repo_name=owner/repo&owner=owner&base_branch=main
 - Use least-privilege AWS and GitHub tokens.
 - Use app-specific passwords for email.
 - Regularly rotate credentials.
+
+---
+
+## 🛠️ Troubleshooting
+
+- **ModuleNotFoundError:**
+  - Ensure all dependencies are installed: `pip install -r requirements.txt`
+  - If you see `No module named 'dotenv'` or `No module named 'uvicorn'`, install them manually.
+- **FileNotFoundError:**
+  - Make sure the `data/suggestions/` directory exists before running the analyzer or server.
+- **Permission Errors:**
+  - Your GitHub token must have `repo` access for private repositories.
+  - AWS and SMTP credentials must be valid and active.
+- **API Rate Limits:**
+  - The GitHub API has rate limits. Use a personal access token to increase your quota.
+- **Cross-Platform:**
+  - All scripts and tools are designed to work on Windows, Mac, and Linux.
 
 ---
 
