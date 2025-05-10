@@ -49,10 +49,17 @@ class Emailer:
 
 if __name__ == "__main__":
     emailer = Emailer()
-    # Example usage
+    # Test email with configured credentials
     result = emailer.send_email(
-        to_email="recipient@example.com",
-        subject="Test Email",
-        body="This is a test email from CodeBrew"
+        to_email=os.getenv('SMTP_USERNAME'),  # Send to the configured email
+        subject="Test Email from CodeBrew",
+        body="This is a test email from CodeBrew. If you receive this, the email configuration is working correctly!",
+        is_html=True
     )
-    print(result) 
+    print("Email configuration:", {
+        "server": emailer.smtp_server,
+        "port": emailer.smtp_port,
+        "username": emailer.smtp_username,
+        "password_set": bool(emailer.smtp_password)
+    })
+    print("Send result:", result) 

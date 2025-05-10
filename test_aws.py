@@ -44,4 +44,4 @@ def test_aws_bedrock():
             print("Error response:", e.response)
 
 if __name__ == "__main__":
-    test_aws_bedrock() 
+    test_aws_bedrock()
