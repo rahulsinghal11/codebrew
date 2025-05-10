@@ -36,10 +36,26 @@ def main():
     
     if analyses:
         print(f"\n✅ Successfully analyzed {len(analyses)} files")
-        for analysis in analyses:
-            print(f"\n📝 Analysis for {analysis['file']}:")
-            print(f"Issue: {analysis['issue']}")
-            print(f"Benefit: {analysis['benefit']['explanation']}")
+        if isinstance(analyses, list):
+            for analysis in analyses:
+                print(f"\n📝 Analysis for {analysis.get('file', 'unknown')}:" )
+                print(f"Issue: {analysis.get('issue', '')}")
+                print(f"Benefit: {analysis.get('benefit', '')}")
+                print(f"Old code:\n{analysis.get('old_code', '')}")
+                print(f"New code:\n{analysis.get('new_code', '')}")
+                print(f"Commit message: {analysis.get('commit_message', '')}")
+                print(f"Branch name: {analysis.get('branch_name', '')}")
+        elif isinstance(analyses, dict):
+            analysis = analyses
+            print(f"\n📝 Analysis for {analysis.get('file', 'unknown')}:" )
+            print(f"Issue: {analysis.get('issue', '')}")
+            print(f"Benefit: {analysis.get('benefit', '')}")
+            print(f"Old code:\n{analysis.get('old_code', '')}")
+            print(f"New code:\n{analysis.get('new_code', '')}")
+            print(f"Commit message: {analysis.get('commit_message', '')}")
+            print(f"Branch name: {analysis.get('branch_name', '')}")
+        else:
+            print("❌ Unexpected format for analyses:", type(analyses), analyses)
     else:
         print("\n❌ Analysis failed")
             
