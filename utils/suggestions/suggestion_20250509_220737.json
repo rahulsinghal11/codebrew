@@ -9,5 +9,5 @@
   "new_code": "        if num > 1:\n            for i in range(2, int(num**0.5) + 1):\n                if num % i == 0:\n                    is_prime = False\n                    break",
   "benefit": "Reduces time complexity from O(n*sqrt(n)) to O(n*sqrt(sqrt(n))); ~50% faster for large inputs.",
   "commit_message": "Optimize prime number checking algorithm",
-  "branch_name": "optimize-prime-number-checking"
+  "branch_name": "optimize-prime-number-checking-1"
 }
