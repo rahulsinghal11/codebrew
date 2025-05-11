@@ -1,4 +1,4 @@
-# CodeBrew: AI-Powered GitHub Repo Analyzer, Suggestion, and Automation Platform
+# CodeBrew: AI-Powered GitHub Repo Analyzer, Suggestion, Dashboard, and Automation Platform
 
 ![CodeBrew Logo](https://img.shields.io/badge/AI%20Code%20Review-Automated-blueviolet?style=for-the-badge)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=for-the-badge)
@@ -8,7 +8,7 @@
 
 ## 🚀 Overview
 
-**CodeBrew** is an advanced AI-powered platform that automatically selects random GitHub repositories from a configured list, fetches their code using the GitHub API, analyzes them for improvements, and automates the process of creating pull requests and sending email digests. It is designed for teams and individuals who want to supercharge their code quality, automate code reviews, and streamline the process of applying best practices across multiple repositories.
+**CodeBrew** is an advanced AI-powered platform that automatically selects random GitHub repositories from a configured list, fetches their code using the GitHub API, analyzes them for improvements, and automates the process of creating pull requests and sending email digests. It also features a beautiful analytics dashboard for tracking all code improvements and team activity. It is designed for teams and individuals who want to supercharge their code quality, automate code reviews, and streamline the process of applying best practices across multiple repositories.
 
 ---
 
@@ -26,6 +26,8 @@
   FastAPI backend lets you create a GitHub pull request with the suggested change in one click.
 - **Branch & File Automation:**  
   Automatically creates branches, updates files, commits changes, and opens PRs on GitHub using the GitHub REST API.
+- **Dashboard & Analytics:**  
+  Interactive Streamlit dashboard to visualize optimizations, user leaderboards, repository stats, and more.
 - **Suggestion Logging:**  
   All suggestions and PRs are logged for audit and tracking.
 - **Multi-Repo Support:**  
@@ -48,6 +50,10 @@
 │   └── suggestions/     # Saved suggestions (JSON) - must exist!
 ├── utils/               # Email, PR, GitHub, and text utilities
 ├── web/                 # FastAPI backend for PR automation
+│   ├── Analytics.py     # Streamlit dashboard for analytics and stats
+│   ├── static/          # Dashboard CSS and assets
+│   ├── pages/           # Additional dashboard pages
+│   └── data/            # Dashboard data (e.g., data.json)
 ├── test_files/          # Example files for testing
 ├── main.py              # Entry point for orchestrating analysis
 ├── requirements.txt     # Python dependencies
@@ -128,6 +134,8 @@ SUGGESTIONS_DIR=data/suggestions
    - Updates the file with the improved code (via GitHub API)
    - Commits and pushes the change (via GitHub API)
    - Opens a pull request on GitHub (via GitHub API)
+6. **Dashboard & Analytics:**  
+   All activity and optimizations are visualized in a beautiful Streamlit dashboard.
 
 ---
 
@@ -148,6 +156,20 @@ python main.py
 ```
 
 - The FastAPI backend exposes endpoints (e.g., `/create_pr`) for PR automation, which can be triggered from email links or directly via HTTP requests.
+
+### Run the Dashboard (Streamlit Analytics)
+
+```bash
+streamlit run web/Analytics.py
+```
+
+- The dashboard will open in your browser (default: http://localhost:8501)
+- **Dashboard Features:**
+  - Global stats: total lines optimized, unused lines removed, total optimizations, repositories optimized
+  - Optimization over time: interactive line chart
+  - User leaderboard: see who contributed the most
+  - Repository stats: select a repo to view its optimizations, summaries, and stats
+  - Beautiful UI with custom CSS and visuals
 
 ### Send a Test Email
 
@@ -179,6 +201,7 @@ GET /create_pr?repo_name=owner/repo&owner=owner&base_branch=main
 - **AWS Bedrock:** For AI code analysis (Claude 3)
 - **GitHub REST API:** For fetching code, creating branches, updating files, and making PRs
 - **SMTP:** For sending notification emails
+- **Streamlit:** For the analytics dashboard
 
 ---
 
@@ -188,6 +211,7 @@ GET /create_pr?repo_name=owner/repo&owner=owner&base_branch=main
 - Customize email templates in `utils/emailer.py`
 - Add new FastAPI endpoints in `web/pr_api.py`
 - Add more code analysis logic in `ai/analyzer.py`
+- Add new dashboard pages in `web/pages/`
 - Works on Windows, Mac, and Linux
 
 ---
