@@ -1,8 +1,4 @@
-import boto3
-import json
-import os
-from dotenv import load_dotenv
-from pathlib import Path
+def process_data(data):\n    import pandas as pd\n    df = pd.DataFrame(data)\n    return df.mean()
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 from utils.github_utils import GitHubCodeFetcher
